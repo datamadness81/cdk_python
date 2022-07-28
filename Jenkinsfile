@@ -7,12 +7,16 @@ pipeline {
     AWS_SECRET_ACCESS_KEY = credentials('aws_secret_key')
   }
   stages {
+    stage('Create Project Folder') {
+      steps {
+        sh 'mkdir -p -m a=rwx cdk_apache && chown jenkins cdk_apache'
+      }
+    }
     stage('Initialize CDK Project') {
       steps {
         dir('cdk_apache') {
           sh 'cdk init app --language python'
           sh 'export PYTHONPATH=$PWD/.venv/bin/python3.9'
-          sh '$PWD'
           // Copy customized scripts and app code for the project
           sh 'cp ../app.py ../user_data.sh .'
           sh 'cp ../cdk_apache_stack.py cdk_apache/'
@@ -20,7 +24,7 @@ pipeline {
       }
       post {
         failure {
-          sh 'rm -rf ./cdk_apache/*'
+          sh 'rm -rf ./*'
         }
         success {
           echo 'CDK project has been initialized successfully'
@@ -37,7 +41,7 @@ pipeline {
       post {
         failure {
           sh 'cdk destroy --force'
-          sh 'rm -rf ./cdk_apache/*'
+          sh 'rm -rf ./*'
         }
         success {
           echo 'Apache Virtual Machine Deployed'

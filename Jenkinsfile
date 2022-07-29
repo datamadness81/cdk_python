@@ -9,7 +9,7 @@ pipeline {
   stages {
     stage('Create Project Folder') {
       steps {
-        sh 'mkdir -p -m a=rwx cdk_apache && chown jenkins cdk_apache'
+        sh 'mkdir -p -m a=rwx cdk_apache'
       }
     }
     stage('Initialize CDK Project') {
@@ -24,7 +24,8 @@ pipeline {
       }
       post {
         failure {
-          sh 'rm -rf ./*'
+          cleanWs()
+          echo 'Project initialization failed'
         }
         success {
           echo 'CDK project has been initialized successfully'
@@ -41,7 +42,7 @@ pipeline {
       post {
         failure {
           sh 'cdk destroy --force'
-          sh 'rm -rf ./*'
+          cleanWs()
         }
         success {
           echo 'Apache Virtual Machine Deployed'
@@ -55,9 +56,16 @@ pipeline {
         dir('cdk_apache') {
           sh 'cdk destroy --force'
           echo 'AWS resources destroyed!'
-          cleanWs(disableDeferredWipeout: true)
-          echo 'Jenkins Workspace has been wipe out'
         }  
+      }
+      post {
+        failure {
+          echo 'The AWS resources were not destroyed! Please delete them manually through AWS console'
+        }
+        success {
+          cleanWs()
+          echo 'Jenkins Workspace has been wipe out'
+        }
       }
     }
   }
